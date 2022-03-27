@@ -13,7 +13,7 @@
  - [x] Connects and logins to a remote CTFd instance.
  - [x] Dumps all the challenges by category.
  - [x] Download attached files.
- - [x] Prints a ✔️ or a :x: to indicate if the challenge is solved.
+ - [x] Prints a ✔️ or a :x: to indicate if the challenge is solved or not.
 
 ## Usage
 
