@@ -107,6 +107,10 @@ class CTFdParser(object):
         chall_json = self.get_challenge_by_id(challenge["id"])["data"]
         f.write("%s\n\n" % chall_json["description"])
 
+        connection_info = chall_json["connection_info"]
+        if len(connection_info) != 0:
+            f.write("%s\n\n" % connection_info)
+
         # Get challenge files
         if len(chall_json["files"]) != 0:
             f.write("## Files : \n")
