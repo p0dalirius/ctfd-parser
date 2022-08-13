@@ -161,6 +161,7 @@ def parseArgs():
     header()
     parser = argparse.ArgumentParser(description="CTFdParser")
     parser.add_argument("-t", "--target", required=True, help="CTFd target (domain or ip)")
+    parser.add_argument("-o", "--output", required=False, help="Output directory")
     parser.add_argument("-u", "--user", required=True, help="Username to login to CTFd")
     parser.add_argument("-p", "--password", required=True, help="Password to login to CTFd")
     parser.add_argument("-T", "--threads", required=False, default=8, type=int, help="Number of threads (default: 8)")
@@ -177,7 +178,10 @@ if __name__ == '__main__':
 
     if args.verbose:
         print("[>] Target URL: %s" % args.target)
+    
+    if args.output is None:
+        args.output = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Challenges")
 
-    cp = CTFdParser(args.target, args.user, args.password)
+    cp = CTFdParser(args.target, args.user, args.password, args.output)
     cp.login()
     cp.get_challenges(threads=args.threads)
