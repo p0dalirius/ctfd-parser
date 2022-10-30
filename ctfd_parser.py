@@ -10,6 +10,7 @@ import requests
 import re
 import os
 from concurrent.futures import ThreadPoolExecutor
+from getpass import getpass
 
 
 def os_filename_sanitize(s):
@@ -49,10 +50,8 @@ class CTFdParser(object):
                 'nonce': nonce.decode('UTF-8')
             }
         )
-        if r.status_code == 200:
-            return True
-        else:
-            return False
+
+        return 'Your username or password is incorrect' not in r.text
 
     def get_challenges(self, threads=8):
         """Documentation for get_challenges"""
@@ -163,7 +162,7 @@ def parseArgs():
     parser.add_argument("-t", "--target", required=True, help="CTFd target (domain or ip)")
     parser.add_argument("-o", "--output", required=False, help="Output directory")
     parser.add_argument("-u", "--user", required=True, help="Username to login to CTFd")
-    parser.add_argument("-p", "--password", required=True, help="Password to login to CTFd")
+    parser.add_argument("-p", "--password", required=False, help="Password to login to CTFd (default: interactive)")
     parser.add_argument("-T", "--threads", required=False, default=8, type=int, help="Number of threads (default: 8)")
     parser.add_argument("-v", "--verbose", default=False, action="store_true", help="Verbose mode. (default: False)")
     return parser.parse_args()
@@ -180,8 +179,13 @@ if __name__ == '__main__':
         print("[>] Target URL: %s" % args.target)
     
     if args.output is None:
-        args.output = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Challenges")
+        args.output = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), "Challenges")
+    if args.password is None:
+        args.password = getpass("Password: ")
 
     cp = CTFdParser(args.target, args.user, args.password, args.output)
-    cp.login()
-    cp.get_challenges(threads=args.threads)
+    if cp.login():
+        cp.get_challenges(threads=args.threads)
+    else:
+        print("[-] Login failed")
