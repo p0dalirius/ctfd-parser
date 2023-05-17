@@ -22,6 +22,9 @@ def os_filename_sanitize(s):
 
 
 class CTFdParser(object):
+
+    max_size_in_mo = 50
+
     def __init__(self, target, login, password, basedir="Challenges"):
         super(CTFdParser, self).__init__()
         self.target = target
@@ -62,27 +65,23 @@ class CTFdParser(object):
                     self.challenges = json_challs['data']
                     self._parse(threads=threads)
                 else:
-                    print(
-                        "[warn] An error occurred while requesting /api/v1/challenges")
+                    print("[warn] An error occurred while requesting /api/v1/challenges")
             return json_challs
         else:
             return None
 
     def _parse(self, threads=8):
         # Categories
-        self.categories = sorted(
-            list(set([chall["category"] for chall in self.challenges])))
+        self.categories = [chall["category"] for chall in self.challenges]
+        self.categories = sorted(list(set(self.categories)))
 
-        print(
-            f'\x1b[1m[\x1b[93m+\x1b[0m\x1b[1m]\x1b[0m Found {len(self.categories)} categories !')
+        print(f'\x1b[1m[\x1b[93m+\x1b[0m\x1b[1m]\x1b[0m Found {len(self.categories)} categories !')
 
         # Parsing challenges
         for category in self.categories:
-            print(
-                f"\x1b[1m[\x1b[93m>\x1b[0m\x1b[1m]\x1b[0m Parsing challenges of category : \x1b[95m{category}\x1b[0m")
+            print(f"\x1b[1m[\x1b[93m>\x1b[0m\x1b[1m]\x1b[0m Parsing challenges of category : \x1b[95m{category}\x1b[0m")
 
-            challs_of_category = [
-                c for c in self.challenges if c['category'] == category]
+            challs_of_category = [c for c in self.challenges if c['category'] == category]
 
             # Waits for all the threads to be completed
             with ThreadPoolExecutor(max_workers=min(threads, len(challs_of_category))) as tp:
@@ -92,14 +91,11 @@ class CTFdParser(object):
 
     def dump_challenge(self, category, challenge):
         if challenge["solved_by_me"]:
-            print(
-                f"   \x1b[1m[\x1b[93m>\x1b[0m\x1b[1m]\x1b[0m \x1b[1;92m✅\x1b[0m \x1b[96m{challenge['name']}\x1b[0m")
+            print(f"   \x1b[1m[\x1b[93m>\x1b[0m\x1b[1m]\x1b[0m \x1b[1;92m✅\x1b[0m \x1b[96m{challenge['name']}\x1b[0m")
         else:
-            print(
-                f"   \x1b[1m[\x1b[93m>\x1b[0m\x1b[1m]\x1b[0m \x1b[1;91m❌\x1b[0m \x1b[96m{challenge['name']}\x1b[0m")
+            print(f"   \x1b[1m[\x1b[93m>\x1b[0m\x1b[1m]\x1b[0m \x1b[1;91m❌\x1b[0m \x1b[96m{challenge['name']}\x1b[0m")
 
-        folder = os.path.sep.join([self.basedir, os_filename_sanitize(
-            category), os_filename_sanitize(challenge["name"])])
+        folder = os.path.sep.join([self.basedir, os_filename_sanitize(category), os_filename_sanitize(challenge["name"])])
         if not os.path.exists(folder):
             os.makedirs(folder)
 
@@ -117,29 +113,36 @@ class CTFdParser(object):
             if len(connection_info) != 0:
                 f.write(f"{connection_info}\n\n")
 
+        print(chall_json["files"])
         # Get challenge files
         if len(chall_json["files"]) != 0:
             f.write("## Files : \n")
             for file_url in chall_json["files"]:
-                r = self.session.head(
-                    self.target + file_url, allow_redirects=True)
-                size = int(r.headers["Content-Length"])
                 if "?" in file_url:
                     filename = os.path.basename(file_url.split('?')[0])
                 else:
                     filename = os.path.basename(file_url)
 
-                f.write(f" - [{filename}](./{filename})\n")
-                if size < (50 * 1024 * 1024):  # 50 Mb
-                    r = self.session.get(self.target + file_url, stream=True)
-                    with open(folder + os.path.sep + filename, "wb") as fdl:
-                        for chunk in r.iter_content(chunk_size=16 * 1024):
-                            fdl.write(chunk)
+                r = self.session.head(self.target + file_url, allow_redirects=True)
+                if "Content-Length" in r.headers.keys():
+                    size = int(r.headers["Content-Length"])
+                    if size < (self.max_size_in_mo * 1024 * 1024):  # 50 Mb
+                        r = self.session.get(self.target + file_url, stream=True)
+                        with open(folder + os.path.sep + filename, "wb") as fdl:
+                            for chunk in r.iter_content(chunk_size=16 * 1024):
+                                fdl.write(chunk)
+                    else:
+                        # Size too big
+                        pass
+
                 else:
                     r = self.session.get(self.target + file_url, stream=True)
                     with open(folder + os.path.sep + filename, "wb") as fdl:
                         for chunk in r.iter_content(chunk_size=16 * 1024):
                             fdl.write(chunk)
+
+                f.write(f" - [{filename}](./{filename})\n")
+
         f.write("\n\n")
         f.close()
 
@@ -166,18 +169,12 @@ def header():
 def parseArgs():
     header()
     parser = argparse.ArgumentParser(description="CTFdParser")
-    parser.add_argument("-t", "--target", required=True,
-                        help="CTFd target (domain or ip)")
-    parser.add_argument("-o", "--output", required=False,
-                        help="Output directory")
-    parser.add_argument("-u", "--user", required=True,
-                        help="Username to login to CTFd")
-    parser.add_argument("-p", "--password", required=False,
-                        help="Password to login to CTFd (default: interactive)")
-    parser.add_argument("-T", "--threads", required=False,
-                        default=8, type=int, help="Number of threads (default: 8)")
-    parser.add_argument("-v", "--verbose", default=False,
-                        action="store_true", help="Verbose mode. (default: False)")
+    parser.add_argument("-t", "--target", required=True, help="CTFd target (domain or ip)")
+    parser.add_argument("-o", "--output", required=False, help="Output directory")
+    parser.add_argument("-u", "--user", required=True, help="Username to login to CTFd")
+    parser.add_argument("-p", "--password", required=False, help="Password to login to CTFd (default: interactive)")
+    parser.add_argument("-T", "--threads", required=False, default=8, type=int, help="Number of threads (default: 8)")
+    parser.add_argument("-v", "--verbose", default=False, action="store_true", help="Verbose mode. (default: False)")
     return parser.parse_args()
 
 
@@ -192,8 +189,7 @@ if __name__ == '__main__':
         print(f"[>] Target URL: {args.target}")
 
     if args.output is None:
-        args.output = os.path.join(os.path.dirname(
-            os.path.abspath(__file__)), "Challenges")
+        args.output = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Challenges")
     if args.password is None:
         args.password = getpass("Password: ")
 
