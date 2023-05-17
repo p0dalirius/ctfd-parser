@@ -113,7 +113,6 @@ class CTFdParser(object):
             if len(connection_info) != 0:
                 f.write(f"{connection_info}\n\n")
 
-        print(chall_json["files"])
         # Get challenge files
         if len(chall_json["files"]) != 0:
             f.write("## Files : \n")
