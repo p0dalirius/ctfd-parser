@@ -136,7 +136,7 @@ class CTFdParser(object):
                 r = self.session.head(self.target + file_url, allow_redirects=True)
                 if "Content-Length" in r.headers.keys():
                     size = int(r.headers["Content-Length"])
-                    if size < (self.FILE_MAX_SIZE_MO * 1024 * 1024):  # 50 Mb
+                    if size < (FILE_MAX_SIZE_MO * 1024 * 1024):  # 50 Mb
                         r = self.session.get(self.target + file_url, stream=True)
                         with open(folder + os.path.sep + filename, "wb") as fdl:
                             for chunk in r.iter_content(chunk_size=16 * 1024):
