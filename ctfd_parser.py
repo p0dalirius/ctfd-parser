@@ -178,7 +178,7 @@ def parseArgs() -> dict:
     parser = argparse.ArgumentParser(description="CTFdParser")
     parser.add_argument("-t", "--target", required=True, help="CTFd target (domain or ip)")
     parser.add_argument("-o", "--output", required=False, help="Output directory")
-    parser.add_argument("-u", "--user", required=True, help="Username to login to CTFd")
+    parser.add_argument("-u", "--user", required=False, help="Username to login to CTFd")
     parser.add_argument("-p", "--password", required=False, help="Password to login to CTFd (default: interactive)")
     parser.add_argument("-T", "--threads", required=False, default=8, type=int, help="Number of threads (default: 8)")
     parser.add_argument("-v", "--verbose", default=False, action="store_true", help="Verbose mode. (default: False)")
@@ -247,16 +247,17 @@ def main() -> int:
         
     if output is None:
         output = os.path.join(ROOT, "Challenges")
-    if password is None:
+    if user is not None and password is None:
         password = getpass("Password: ")
 
     cp = CTFdParser(target, user, password, output, initfile)
-    if cp.login():
-        cp.get_challenges(threads=threads)
-    else:
-        print("[-] Login failed")
-        return -1
-    
+    if(user is not None):
+        if cp.login():
+            cp.get_challenges(threads=threads)
+        else:
+            print("[-] Login failed")
+            return -1
+    cp.get_challenges(threads=threads)
     return 0
 
 if __name__ == '__main__':
