@@ -10,6 +10,7 @@ import requests
 import re
 import os
 import io
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from getpass import getpass
 import shutil
@@ -169,7 +170,8 @@ class CTFdParser(object):
         if r.status_code == 200:
             rdata = json.loads(r.content)
         else:
-            print(r, file=sys.stderr)
+            print(f'HTTP STATUS: {r.status_code}', file=sys.stderr)
+            print(r.content.decode('UTF-8'), file=sys.stderr)
             raise RuntimeError('Something went wrong :(')
         return rdata
 
@@ -230,12 +232,12 @@ class CTFdParser(object):
             try:
                 self.dump_scoreboard(folder)
             except RuntimeError as e:
-                print(r, file=sys.stderr)
+                print(e, file=sys.stderr)
 
             try:
                 self.dump_team_solves(folder, teams)
             except RuntimeError as e:
-                print(r, file=sys.stderr)
+                print(e, file=sys.stderr)
         else:
             self.get_challenges(threads)
 
