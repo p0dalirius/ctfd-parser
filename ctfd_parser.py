@@ -216,7 +216,7 @@ class CTFdParser(object):
     def dump_team_solves(self:object, folder:str, teams:list) -> None:
         team_solves = {}
         for team in teams:
-            team_solves[team['id']] = self.get_json(f'/api/v1/teams/{team['id']}/solves')['data']
+            team_solves[team['id']] = self.get_json(f'/api/v1/teams/{team["id"]}/solves')['data']
 
         self.write_json(folder, 'team_solves.json', team_solves)
 
