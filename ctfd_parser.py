@@ -56,7 +56,7 @@ class CTFdParser(object):
                 'name': self.credentials['user'],
                 'password': self.credentials['password'],
                 '_submit': 'Submit',
-                'nonce': nonce.decode('UTF-8')
+                'nonce': nonce
             }
         )
 
